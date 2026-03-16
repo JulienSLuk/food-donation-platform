@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Food Donation Platform</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -134,7 +138,93 @@
     <div id="predictionResult" style="margin-top: 16px;"></div>
   </div>
 
+  <div class="card" style="margin-top: 24px;">
+    <h2>Donation & Request Map</h2>
+    <div id="map" style="height: 420px; border-radius: 12px; margin-top: 12px;"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <script>
+
+    const locationCoordinates = {
+      "Jurong": [1.3329, 103.7436],
+      "Woodlands": [1.4382, 103.7890],
+      "Tampines": [1.3496, 103.9568],
+      "Bedok": [1.3236, 103.9273],
+      "Yishun": [1.4291, 103.8350],
+      "Orchard": [1.3048, 103.8318],
+      "Bishan": [1.3509, 103.8485],
+      "Toa Payoh": [1.3343, 103.8563]
+    };
+
+    let map;
+    let mapMarkers = [];
+
+    function initializeMap() {
+      map = L.map("map").setView([1.3521, 103.8198], 11);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+    }
+
+    function clearMapMarkers() {
+      mapMarkers.forEach(marker => map.removeLayer(marker));
+      mapMarkers = [];
+    }
+
+    function addMarker(lat, lng, popupText) {
+      const marker = L.marker([lat, lng]).addTo(map);
+      marker.bindPopup(popupText);
+      mapMarkers.push(marker);
+    }
+
+    async function loadMapData() {
+      const donationsRes = await fetch("/donations");
+      const donations = await donationsRes.json();
+
+      const requestsRes = await fetch("/requests");
+      const requests = await requestsRes.json();
+
+      clearMapMarkers();
+
+      donations.forEach(donation => {
+        const coords = locationCoordinates[donation.location];
+        if (coords) {
+          addMarker(
+            coords[0],
+            coords[1],
+            `
+              <strong>Donation</strong><br>
+              Item: ${donation.food_item}<br>
+              Donor: ${donation.donor_name}<br>
+              Quantity: ${donation.quantity}<br>
+              Status: ${donation.status}<br>
+              Location: ${donation.location}
+            `
+          );
+        }
+      });
+
+      requests.forEach(request => {
+        const coords = locationCoordinates[request.location];
+        if (coords) {
+          addMarker(
+            coords[0],
+            coords[1],
+            `
+              <strong>Request</strong><br>
+              Item: ${request.needed_item}<br>
+              Requester: ${request.requester_name}<br>
+              Quantity: ${request.quantity}<br>
+              Location: ${request.location}
+            `
+          );
+        }
+      });
+    }
+
     async function loadDonations() {
       const res = await fetch("/donations");
       const donations = await res.json();
@@ -266,10 +356,12 @@
       `;
     });
 
-    loadMatches();
-
+    initializeMap();
     loadDonations();
     loadRequests();
+    loadMatches();
+    loadMapData();
+
   </script>
 </body>
 </html>
