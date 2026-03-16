@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Food Donation Platform</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    h1, h2 {
+      margin-bottom: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .list-item {
+      background: #334155;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .claimed {
+      opacity: 0.7;
+    }
+
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Food Donation Platform</h1>
+    <p>Connect food donors with people and organizations in need.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Offer Food Donation</h2>
+        <form id="donationForm">
+          <input type="text" id="donor_name" placeholder="Donor Name" required />
+          <input type="text" id="food_item" placeholder="Food Item" required />
+          <input type="text" id="quantity" placeholder="Quantity" required />
+          <input type="text" id="expiry_date" placeholder="Expiry Date (optional)" />
+          <input type="text" id="location" placeholder="Location" required />
+          <button type="submit">Submit Donation</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Request Food</h2>
+        <form id="requestForm">
+          <input type="text" id="requester_name" placeholder="Requester Name" required />
+          <input type="text" id="needed_item" placeholder="Needed Item" required />
+          <input type="text" id="request_quantity" placeholder="Quantity" required />
+          <input type="text" id="request_location" placeholder="Location" required />
+          <textarea id="notes" placeholder="Notes"></textarea>
+          <button type="submit">Submit Request</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top: 24px;">
+      <div class="card">
+        <h2>Available Donations</h2>
+        <div id="donationsList"></div>
+      </div>
+
+      <div class="card">
+        <h2>Food Requests</h2>
+        <div id="requestsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadDonations() {
+      const res = await fetch("/donations");
+      const donations = await res.json();
+      const list = document.getElementById("donationsList");
+      list.innerHTML = "";
+
+      donations.forEach(donation => {
+        const item = document.createElement("div");
+        item.className = "list-item " + (donation.status === "claimed" ? "claimed" : "");
+        item.innerHTML = `
+          <strong>${donation.food_item}</strong><br>
+          Donor: ${donation.donor_name}<br>
+          Quantity: ${donation.quantity}<br>
+          Expiry: ${donation.expiry_date || "N/A"}<br>
+          Location: ${donation.location}<br>
+          Status: ${donation.status}
+          ${donation.status === "available" ? `<br><button onclick="claimDonation(${donation.id})">Mark as Claimed</button>` : ""}
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    async function loadRequests() {
+      const res = await fetch("/requests");
+      const requests = await res.json();
+      const list = document.getElementById("requestsList");
+      list.innerHTML = "";
+
+      requests.forEach(request => {
+        const item = document.createElement("div");
+        item.className = "list-item";
+        item.innerHTML = `
+          <strong>${request.needed_item}</strong><br>
+          Requester: ${request.requester_name}<br>
+          Quantity: ${request.quantity}<br>
+          Location: ${request.location}<br>
+          Notes: ${request.notes || "N/A"}
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    async function claimDonation(id) {
+      await fetch(`/donations/${id}/claim`, { method: "PATCH" });
+      loadDonations();
+    }
+
+    document.getElementById("donationForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const payload = {
+        donor_name: document.getElementById("donor_name").value,
+        food_item: document.getElementById("food_item").value,
+        quantity: document.getElementById("quantity").value,
+        expiry_date: document.getElementById("expiry_date").value,
+        location: document.getElementById("location").value
+      };
+
+      await fetch("/donations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      e.target.reset();
+      loadDonations();
+    });
+
+    document.getElementById("requestForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const payload = {
+        requester_name: document.getElementById("requester_name").value,
+        needed_item: document.getElementById("needed_item").value,
+        quantity: document.getElementById("request_quantity").value,
+        location: document.getElementById("request_location").value,
+        notes: document.getElementById("notes").value
+      };
+
+      await fetch("/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      e.target.reset();
+      loadRequests();
+    });
+
+    loadDonations();
+    loadRequests();
+  </script>
+</body>
+</html>
