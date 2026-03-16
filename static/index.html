@@ -122,6 +122,18 @@
     <div id="matchesList"></div>
   </div>
 
+  <div class="card" style="margin-top: 24px;">
+    <h2>Demand Prediction</h2>
+    <form id="predictionForm">
+      <input type="text" id="predict_location" placeholder="Location" required />
+      <input type="text" id="predict_food_type" placeholder="Food Type" required />
+      <input type="number" id="predict_requests" placeholder="Number of Requests" required />
+      <button type="submit">Predict Demand</button>
+    </form>
+
+    <div id="predictionResult" style="margin-top: 16px;"></div>
+  </div>
+
   <script>
     async function loadDonations() {
       const res = await fetch("/donations");
@@ -233,6 +245,26 @@
         list.appendChild(item);
       });
     }
+
+    document.getElementById("predictionForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const location = document.getElementById("predict_location").value;
+      const foodType = document.getElementById("predict_food_type").value;
+      const requests = document.getElementById("predict_requests").value;
+
+      const res = await fetch(`/predict-demand?location=${encodeURIComponent(location)}&food_type=${encodeURIComponent(foodType)}&requests=${requests}`);
+      const data = await res.json();
+
+      document.getElementById("predictionResult").innerHTML = `
+        <div class="list-item">
+          <strong>Predicted Demand:</strong> ${data.predicted_demand}<br>
+          Location: ${data.location}<br>
+          Food Type: ${data.food_type}<br>
+          Requests: ${data.requests}
+        </div>
+      `;
+    });
 
     loadMatches();
 

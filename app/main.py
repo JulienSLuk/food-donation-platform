@@ -7,6 +7,8 @@ from .database import engine, SessionLocal
 from .models import Base, Donation, Request
 from .schemas import DonationCreate, DonationResponse, RequestCreate, RequestResponse
 
+from .ml import predict_demand
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Food Donation Platform")
@@ -85,3 +87,13 @@ def find_matches(db: Session = Depends(get_db)):
                 })
 
     return matches
+
+@app.get("/predict-demand")
+def get_demand_prediction(location: str, food_type: str, requests: int):
+    prediction = predict_demand(location, food_type, requests)
+    return {
+        "location": location,
+        "food_type": food_type,
+        "requests": requests,
+        "predicted_demand": prediction
+    }
