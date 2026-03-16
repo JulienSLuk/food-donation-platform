@@ -117,6 +117,11 @@
     </div>
   </div>
 
+  <div class="card">
+    <h2>Suggested Matches</h2>
+    <div id="matchesList"></div>
+  </div>
+
   <script>
     async function loadDonations() {
       const res = await fetch("/donations");
@@ -206,6 +211,30 @@
       e.target.reset();
       loadRequests();
     });
+
+    async function loadMatches() {
+      const res = await fetch("/matches");
+      const matches = await res.json();
+
+      const list = document.getElementById("matchesList");
+      list.innerHTML = "";
+
+      matches.forEach(match => {
+        const item = document.createElement("div");
+
+        item.className = "list-item";
+
+        item.innerHTML = `
+          <strong>${match.food_item}</strong><br>
+          Requester: ${match.requester}<br>
+          Location: ${match.location}
+        `;
+
+        list.appendChild(item);
+      });
+    }
+
+    loadMatches();
 
     loadDonations();
     loadRequests();

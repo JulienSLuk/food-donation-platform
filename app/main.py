@@ -65,3 +65,23 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
 @app.get("/requests", response_model=list[RequestResponse])
 def list_requests(db: Session = Depends(get_db)):
     return db.query(Request).all()
+
+
+@app.get("/matches")
+def find_matches(db: Session = Depends(get_db)):
+    donations = db.query(Donation).filter(Donation.status == "available").all()
+    requests = db.query(Request).all()
+
+    matches = []
+
+    for donation in donations:
+        for request in requests:
+            if donation.food_item.lower() in request.needed_item.lower():
+                matches.append({
+                    "donation_id": donation.id,
+                    "food_item": donation.food_item,
+                    "requester": request.requester_name,
+                    "location": donation.location
+                })
+
+    return matches
